@@ -1,51 +1,26 @@
-import React, { useState, useEffect } from "react";
-import TaskForm from "./components/TaskForm";
-import TaskList from "./components/TaskList";
+import React, { useState } from "react";
 import { Container, Row, Col, Button, Form } from "react-bootstrap";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import store from "./store/store"; // Import du magasin Redux
+import AddTask from "./components/AddTask"; // Import du composant AddTask
+import TaskList from "./components/ListTask"; // Import du composant TaskList
+import { setSearchTerm } from "./store/action"; // Import de l'action setSearchTerm
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-function App() {
-  // Déclaration des états pour la liste des tâches , recherche et l'affichage du formulaire
-  const [tasks, setTasks] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showForm, setShowForm] = useState(false);
+function AppContent() {
+  const dispatch = useDispatch(); // Utilisation du hook useDispatch pour dispatcher des actions
+  const tasks = useSelector((state) => state.tasks); // Sélection des tâches depuis le magasin Redux
+  const [showForm, setShowForm] = useState(false); // État local pour afficher/masquer le formulaire d'ajout de tâche
+  const [localSearchTerm, setLocalSearchTerm] = useState(""); // État local pour le terme de recherche
 
-  // Chargement des tâches depuis le stockage local lors du chargement initial
-  useEffect(() => {
-    const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    setTasks(savedTasks);
-  }, []);
-
-  // Enregistrement des tâches dans le stockage local chaque fois qu'il y a un changement dans la liste des tâches
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
-
-  // Fonction pour ajouter une nouvelle tâche à la liste
-  const addTask = (task) => {
-    setTasks([...tasks, task]);
-    setShowForm(false); // Masquer le formulaire après l'ajout d'une tâche
+  // Fonction pour gérer le changement du terme de recherche
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value;
+    setLocalSearchTerm(searchTerm);
+    // Dispatch de l'action setSearchTerm avec le nouveau terme de recherche
+    dispatch(setSearchTerm(searchTerm));
   };
-
-  // Fonction pour mettre à jour une tâche existante dans la liste
-  const updateTask = (updatedTask) => {
-    setTasks(
-      tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
-    );
-  };
-
-  // Fonction pour supprimer une tâche de la liste
-  const deleteTask = (taskId) => {
-    setTasks(tasks.filter((task) => task.id !== taskId));
-  };
-
-  // Filtrage des tâches en fonction du terme de recherche saisi par l'utilisateur
-  const filteredTasks = tasks.filter(
-    (task) =>
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <Container>
@@ -56,25 +31,21 @@ function App() {
           <Form.Control
             type="text"
             placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={localSearchTerm}
+            onChange={handleSearchChange}
           />
         </Col>
       </Row>
       <Row>
         <Col>
           {/* Affichage de la liste des tâches filtrées */}
-          <TaskList
-            tasks={filteredTasks}
-            updateTask={updateTask}
-            deleteTask={deleteTask}
-          />
+          <TaskList />
         </Col>
       </Row>
       {/* Affichage du formulaire d'ajout de tâche si showForm est true */}
       {showForm && (
         <div id="addTaskForm">
-          <TaskForm addTask={addTask} />
+          <AddTask />
         </div>
       )}
       {/* Bouton pour afficher/masquer le formulaire d'ajout de tâche */}
@@ -87,6 +58,15 @@ function App() {
         +
       </Button>
     </Container>
+  );
+}
+
+function App() {
+  return (
+    <Provider store={store}>
+      {/* Encapsulation de l'application avec le Provider pour permettre l'accès au magasin Redux */}
+      <AppContent />
+    </Provider>
   );
 }
 
